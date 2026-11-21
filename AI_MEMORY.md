@@ -90,6 +90,7 @@ Last updated: 2026-11-21 (v0.1.2-beta).
 | 11-20 | App ID switched to `com.costelinhagames.wreckedmetal` *before* the first public release; never change it again | Changing it later breaks updates |
 | 11-20 | Release build: debuggable + `CMAKE_BUILD_TYPE=Debug` for native (the game's own files are still -O2) | `wrap.sh` needs debuggable; RelWithDebInfo doubled ~1.5% of frames vs 0.1% |
 | 11-20 | Releases come from tags; the maintainer pre-approved: CI green + device test passing → merge and release | Testers always get the latest build |
+| 11-21 | Customizations go solely into **Wrecked Metal** (`!gPortConfig.fidelity`) via `wm_mod.c` + `Data/wm_tuning.ini`, without menu toggles; PRs await manual approval after Android device test | Keeps Play Fidelity pure, avoids UI bloat and ensures review before landing on `port-pc`/`main` |
 
 ---
 
@@ -194,7 +195,9 @@ Last updated: 2026-11-21 (v0.1.2-beta).
 
 - **2026-11-21**: Baja Buggy "flies off" bug traced on the S23 with a new physics trace; root
   cause was the port's `frexp` byte order (engine PR #6). Debug APKs now signed with the release
-  key. Added `DOCS_DEV_SETUP.md` and versioned ADB runner `tools/test-run.ps1`.
+  key. Added `DOCS_DEV_SETUP.md` and versioned ADB runner `tools/test-run.ps1`. Implemented
+  Phase 0 (`wm_mod.h` / `wm_tuning.c` / `wm_mod.c`, `Data/wm_tuning.ini`) and Quick Win 1.1
+  (rear-right wheel dust fix in `B940.c`, terrain-aware smoke/dirt/snow fogs, raised smoke pool).
 
 ---
 

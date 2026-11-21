@@ -32,6 +32,12 @@ demolition racer, rebuilt from the community decompilation. By Costelinha Games.
   choice is unclear.
 - **Keep the PC build working.** Android-only engine changes go under `#ifdef __ANDROID__`
   (or `TARGET_*` macros) in the engine fork.
+- **Wrecked Metal enhancements live under `!gPortConfig.fidelity`.** Gameplay, visual and
+  audio customizations are centralized in `port/game/wm_mod.c` + `port/src/wm_tuning.c`
+  (`Data/wm_tuning.ini`), leaving **Play Fidelity** 100% N64-pure and avoiding bloated menus.
+- **Manual PR approval after Android testing.** Never auto-merge customizations straight
+  to `port-pc` or `main`: open a branch/PR, verify the CI APK on the Android device first,
+  and leave the PR pending manual maintainer approval.
 - **Disable all cheats before device tests.** Cheats such as no time limit cause hangs that
   look like bugs. Restore the user's `dd64.ini` afterwards.
 - **Public text is in English** (README, release notes, issues). The original game's name
@@ -70,9 +76,9 @@ demolition racer, rebuilt from the community decompilation. By Costelinha Games.
 - Pushing a `v*` tag makes CI build, sign and publish a GitHub Release. The notes come
   from `.github/release-notes/<tag>.md`, whose first `# ` line is the title. A tag with a
   `-` (like `v0.1.1-beta`) is published as a pre-release.
-- The maintainer's standing rule: when CI is green and the device test passes, merge and
-  tag a new release so testers always get the latest build. If anything fails, don't
-  merge; report instead.
+- The maintainer's rule (2026-11-21): test custom features on Android first via branch/CI
+  APK, and leave every PR pending manual approval before merging or tagging. If anything
+  fails, report instead.
 
 ## Reviewing incoming pull requests
 
