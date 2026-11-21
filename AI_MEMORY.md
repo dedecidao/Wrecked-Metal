@@ -75,6 +75,24 @@ Last updated: 2026-11-21 (v0.1.2-beta).
 
 ---
 
+### Announcer voices (mute + hooks, 2026-11-21)
+
+- Every narrated line goes through the announcer queue (`Msg_Queue`, `Announcer_Request`,
+  `Announcer_QueueRandom`, `Commentary_PickRandom`) and is started by ONE function, `Sound_PlayVoice`
+  (0x80007744, `src/auto/8344.c`). Sound effects never pass there (other channels, IDs < 100), so the
+  port cuts there: `port/src/voices.c`, `Port_VoicePlay`.
+- `[audio] announcer_voice=0` mutes every line (Wrecked Metal default; forced to 1 in Fidelity; menu R >
+  audio > "announcer voice"). `[audio] voice_keep = 0xED 0xD2` keeps some lines. `DD64_VOICELOG=1` logs
+  each line asked for. `Port_VoiceAddHook(fn)` is the hook API (called before the mute; return 1 to
+  swallow the line).
+- Voice ID = prototype `VoiceId` index + 100 (checkpoint 0xED = FX_CHECKPT1; title welcome 0xD2).
+  Full map of IDs -> events and hook ideas: [docs/AUDIO_HOOKS.md](docs/AUDIO_HOOKS.md).
+- The maintainer wants the voices off but every ID kept usable as a hook (slow motion on big hits,
+  other checkpoint / finish sounds). Never delete or patch the samples.
+- Title credit "Music By Domgalegone" (author of the replacement music) under PRESS START:
+  `drawTitleCredit` in `port/game/pcmenu.c`, placed from the sprite's rect (`Port_PressStartRect`,
+  `port/src/video.c`), in the menus' font (the last one seen; the title loads none of its own).
+
 ## 2. Decisions (with reasons)
 
 | Date | Decision | Why |
@@ -198,6 +216,12 @@ Last updated: 2026-11-21 (v0.1.2-beta).
   key. Added `DOCS_DEV_SETUP.md` and versioned ADB runner `tools/test-run.ps1`. Implemented
   Phase 0 (`wm_mod.h` / `wm_tuning.c` / `wm_mod.c`, `Data/wm_tuning.ini`) and Quick Win 1.1
   (rear-right wheel dust fix in `B940.c`, terrain-aware smoke/dirt/snow fogs, raised smoke pool).
+
+- **2026-11-21:** announcer voices muted with per-ID hooks (`[audio] announcer_voice`, `voice_keep`,
+  `Port_VoiceAddHook`), voice map in `docs/AUDIO_HOOKS.md`, title credit "Music By Domgalegone".
+  Branches `feat/voices-mute` (fork, on top of PR #9) and here (on top of PR #18). The maintainer said:
+  no automatic merges for now, PRs stay as drafts for his review. Open: confirm on device which ID is
+  the "high bonus" woman (0xF0 is the candidate) with `DD64_VOICELOG=1`. Next: menu SFX, transitions.
 
 ---
 
