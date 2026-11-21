@@ -212,10 +212,30 @@ Write-Host "Using ADB: $adb" -ForegroundColor DarkGray
 # Disable mDNS discovery so cold ADB startup doesn't trigger firewall prompts or stall
 $env:ADB_MDNS = "0"
 
-# Verify connected device
-$devicesOut = (Invoke-Adb $adb devices).Output
-$deviceLines = ($devicesOut -split "`r?`n") | Where-Object { $_ -match '^\S+\s+device$' }
-if (-not $deviceLines) {
+# Start ADB server completely detached from PowerShell pipes/job objects if not already listening
+if (-not (netstat -ano 2>$null | Select-String "127\.0\.0\.1:5037\s+.*LISTENING")) {
+    $cmdLine = "cmd.exe /c `"set ADB_MDNS=0 && `"$adb`" start-server`""
+    Invoke-CimMethod -ClassName Win32_Process -MethodName Create -Arguments @{ CommandLine = $cmdLine } | Out-Null
+    for ($i = 0; $i -lt 20; $i++) {
+        if (netstat -ano 2>$null | Select-String "127\.0\.0\.1:5037\s+.*LISTENING") { break }
+        Start-Sleep -Milliseconds 200
+    }
+}
+
+# Verify connected device (wait briefly if transitioning through authorizing)
+$devicesOut = ""
+$deviceLines = @()
+for ($i = 0; $i -lt 10; $i++) {
+    $devicesOut = (Invoke-Adb $adb devices).Output
+    $deviceLines = @($devicesOut -split "`r?`n" | Where-Object { $_ -match '^\S+\s+device$' })
+    if ($deviceLines.Count -gt 0) { break }
+    if ($devicesOut -match 'authorizing') {
+        Start-Sleep -Milliseconds 500
+    } else {
+        break
+    }
+}
+if ($deviceLines.Count -eq 0) {
     throw "No authorized Android device connected.`n`nadb devices output:`n$devicesOut`n`nTip: Check USB debugging on the S23 Ultra or switch to a rear motherboard USB port if adb reports offline."
 }
 if ($deviceLines.Count -gt 1) {
@@ -327,10 +347,10 @@ try {
             if ($pidRes.Output) {
                 $sawProcess = $true
                 if (-not $screenCaptured -and $elapsed -ge [Math]::Min(6, $Wait)) {
-                    $sc = Invoke-Adb $adb shell screencap -p /data/local/tmp/wm_screen.png -AllowFailure
+                    $sc = Invoke-Adb $adb shell screencap -p /sdcard/Download/wm_screen.png -AllowFailure
                     if ($sc.ExitCode -eq 0) {
-                        Invoke-Adb $adb pull /data/local/tmp/wm_screen.png (Join-Path $OutDir "screen.png") -AllowFailure | Out-Null
-                        Invoke-Adb $adb shell rm -f /data/local/tmp/wm_screen.png -AllowFailure | Out-Null
+                        Invoke-Adb $adb pull /sdcard/Download/wm_screen.png (Join-Path $OutDir "screen.png") -AllowFailure | Out-Null
+                        Invoke-Adb $adb shell rm -f /sdcard/Download/wm_screen.png -AllowFailure | Out-Null
                         $screenCaptured = $true
                     }
                 }
@@ -345,20 +365,41 @@ try {
     }
 
     if (-not $screenCaptured) {
-        $sc = Invoke-Adb $adb shell screencap -p /data/local/tmp/wm_screen.png -AllowFailure
+        $sc = Invoke-Adb $adb shell screencap -p /sdcard/Download/wm_screen.png -AllowFailure
         if ($sc.ExitCode -eq 0) {
-            Invoke-Adb $adb pull /data/local/tmp/wm_screen.png (Join-Path $OutDir "screen.png") -AllowFailure | Out-Null
-            Invoke-Adb $adb shell rm -f /data/local/tmp/wm_screen.png -AllowFailure | Out-Null
+            Invoke-Adb $adb pull /sdcard/Download/wm_screen.png (Join-Path $OutDir "screen.png") -AllowFailure | Out-Null
+            Invoke-Adb $adb shell rm -f /sdcard/Download/wm_screen.png -AllowFailure | Out-Null
             $screenCaptured = $true
         }
     }
 
-    # Step 7: Pull logs & any DD64_SHOT files
+    # Step 7: Pull logs & any DD64_SHOT files (from internal files/ via run-as, or external)
     $logCheck = Invoke-Adb $adb shell "if [ -f '$remoteLog' ]; then echo EXISTS; fi" -AllowFailure
     if ($logCheck.Output -match 'EXISTS') {
         Invoke-Adb $adb pull $remoteLog (Join-Path $OutDir "dd64.log") | Out-Null
     } else {
         Write-Warning "dd64.log not found at $remoteLog (first boot without ROM?)."
+    }
+
+    $internalShots = Invoke-Adb $adb shell "run-as $pkg ls files 2>/dev/null" -AllowFailure
+    if ($internalShots.Output) {
+        $shotNames = $internalShots.Output -split "`r?`n" | ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^shot_.*\.bmp$' }
+        if ($shotNames) {
+            try { Add-Type -AssemblyName System.Drawing -ErrorAction SilentlyContinue } catch {}
+            foreach ($leaf in $shotNames) {
+                $bmpOut = Join-Path $OutDir $leaf
+                cmd.exe /c "`"$adb`" exec-out run-as $pkg cat `"files/$leaf`" > `"$bmpOut`"" 2>$null
+                if (Test-Path $bmpOut) {
+                    Invoke-Adb $adb shell "run-as $pkg rm -f files/$leaf" -AllowFailure | Out-Null
+                    try {
+                        $pngOut = [System.IO.Path]::ChangeExtension($bmpOut, ".png")
+                        $bmp = [System.Drawing.Bitmap]::FromFile($bmpOut)
+                        $bmp.Save($pngOut, [System.Drawing.Imaging.ImageFormat]::Png)
+                        $bmp.Dispose()
+                    } catch {}
+                }
+            }
+        }
     }
 
     $shotsRes = Invoke-Adb $adb shell "ls '$extFiles'/shot_*.bmp 2>/dev/null" -AllowFailure
@@ -371,8 +412,7 @@ try {
     }
 
     $logcatPath = Join-Path $OutDir "logcat.txt"
-    $lcRes = Invoke-Adb $adb logcat -d -v threadtime -s DD64:V SDL:V DEBUG:V libc:V AndroidRuntime:E -AllowFailure
-    [System.IO.File]::WriteAllText($logcatPath, ($lcRes.Output + "`n"), $utf8NoBom)
+    cmd.exe /c "`"$adb`" logcat -d -v threadtime -s DD64:V SDL:V AndroidRuntime:E DEBUG:F libc:F > `"$logcatPath`"" 2>$null
 
 } finally {
     # Step 8: Always clean up env.txt and restore dd64.ini
