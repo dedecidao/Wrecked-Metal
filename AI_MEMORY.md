@@ -6,7 +6,7 @@ format is loosely based on Akita's [ai-memory](https://akitaonrails.com/2026/05/
 idea (concepts / decisions / gotchas / sessions), kept as one markdown file. See
 [AGENTS.md](AGENTS.md) for the rules, and update this file when you learn something durable.
 
-Last updated: 2026-11-21 (v0.1.2-beta).
+Last updated: 2026-11-21 (v0.1.4-beta prep).
 
 ---
 
@@ -92,6 +92,23 @@ Last updated: 2026-11-21 (v0.1.2-beta).
 - Title credit "Music By Domgalegone" (author of the replacement music) under PRESS START:
   `drawTitleCredit` in `port/game/pcmenu.c`, placed from the sprite's rect (`Port_PressStartRect`,
   `port/src/video.c`), in the menus' font (the last one seen; the title loads none of its own).
+
+### Weather (2026-11-21)
+
+- Wrecked Metal mode only: random rain / storm / snow per race track, table in `Data/wm_tuning.ini`
+  `[weather]` (`random_weather`, `layers`, `density`, `track_N = clear rain storm snow` weights by track
+  id). Full table and notes: [docs/WEATHER.md](docs/WEATHER.md). Code: `port/game/wm_weather.c`,
+  `port/src/wm_thunder.c`, `WM_WeatherRoll` (reusable weighted roll) / `WM_WeatherPick` in `wm_tuning.c`.
+- **Track ids vs. the player's numbering:** ids 0-3 are arenas, 4-11 races. The race menu order is
+  5 4 7 8 11 6 10 9 (cups table `D_80095CA8`), so the maintainer's "track 0" = id 5 = Seascape Sprint.
+  His request skipped number 2; the table reads his 3-8 as menu places 2-7 (glacier = snow, desert = dry
+  only fit that way). Unconfirmed: change the `track_N` lines if he says otherwise.
+- The N64 lightning (`Weather_UpdateLightning`) is dead code on every track; the storm draws its own
+  flash (a particle past the near plane) and synthesizes thunder on its own SDL stream.
+- Textures given to Fast3D must be in game RAM (host addresses < 0x10000000 read as segments): allocate
+  them from `gMainHeap` and write texels as u32.
+- A race scene is set up twice while loading (two `Weather_Init`): the roll is cached 15 s.
+- Tests: `DD64_WEATHER=clear|rain|storm|snow`, `DD64_STRIKE=n` (strike every n frames).
 
 ## 2. Decisions (with reasons)
 
@@ -222,6 +239,13 @@ Last updated: 2026-11-21 (v0.1.2-beta).
   Branches `feat/voices-mute` (fork, on top of PR #9) and here (on top of PR #18). The maintainer said:
   no automatic merges for now, PRs stay as drafts for his review. Open: confirm on device which ID is
   the "high bonus" woman (0xF0 is the candidate) with `DD64_VOICELOG=1`. Next: menu SFX, transitions.
+
+- **2026-11-21:** weather system (`port/game/wm_weather.c`, `port/src/wm_thunder.c`,
+  `[weather]` in `wm_tuning.ini`, `docs/WEATHER.md`). Initial random-weather attempt (rain,
+  storms with flash + synthesized thunder) is kept intact in code for future refinement, but
+  disabled by default (`random_weather = 0`, tuning v4) because it needs more polish over time;
+  the new three-layer parallax snow with soft round flakes remains active on the glacier track
+  (track 10). Branch `feat/weather` in both repos, v0.1.4 prepared.
 
 ---
 
