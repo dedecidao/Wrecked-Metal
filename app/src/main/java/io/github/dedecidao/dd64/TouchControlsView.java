@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.hardware.input.InputManager;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
@@ -21,10 +22,14 @@ import java.util.List;
  *                   launcher's "arrows" option, a compact cross: left and right
  *                   (big, for steering) and up and down (small, for the menus),
  *                   each the stick at full tilt that way
- *   right, bottom   A (gas, the biggest), B (brake) to its left, Z below B
- *   right, above    R, and C-Up (the camera: the only C button the game uses);
- *                   in the Fidelity profile all four C buttons, a diamond
- *   top corners     L (left) and Start (centre)
+ *   right, bottom   A (gas, the biggest), B (brake) to its left
+ *   right, above    R (the handbrake) and C-Up (the camera: the only C button the
+ *                   game uses)
+ *   top right       Start, a small pause button
+ * Wrecked Metal draws icons on A, B, R, C-Up and Start (Tabler Icons, MIT), has no
+ * L (it only hides the HUD) or Z (looking back: kept for a mirror later), and shows
+ * the arrows' up and down only in menus (nativeDriving). The Fidelity profile keeps
+ * the N64 controller: Z below B, L top left, Start top centre, four C buttons.
  *
  * A finger can slide from one button to another (A to B to brake, say).
  * The state goes to native code (android/touch.c) on every change and is
@@ -41,6 +46,8 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
     static final int ARROWS_MASK = ARROW_LEFT | ARROW_RIGHT | ARROW_UP | ARROW_DOWN;
 
     private static native void nativeSetState(int buttons, int x, int y);
+    /** 1 while the player is driving in a race (not in a menu or paused): android/touch.c */
+    private static native int nativeDriving();
 
     private static final class Button {
         final String label;
@@ -49,6 +56,9 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         final float dx, dy, radiusDp;
         float cx, cy, r; // pixels
         boolean pressed;
+        int icon;          // a drawable drawn instead of the label, 0 none
+        boolean pill;      // a rounded bar (the N64's L, R, Z and Start), else a circle
+        boolean menuOnly;  // shown only in menus (the arrows' up and down)
 
         Button(String label, int bit, float dx, float dy, float radiusDp) {
             this.label = label;
@@ -56,6 +66,18 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
             this.dx = dx;
             this.dy = dy;
             this.radiusDp = radiusDp;
+            this.pill = bit == CONT_START || bit == CONT_L || bit == CONT_R || bit == CONT_Z;
+        }
+
+        Button icon(int res) {
+            icon = res;
+            pill = false;
+            return this;
+        }
+
+        Button menuOnly() {
+            menuOnly = true;
+            return this;
         }
 
         boolean hit(float x, float y, float slop) {
@@ -82,6 +104,25 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
     private final int[] mPointerBits = new int[16];
     private int mLastButtons = -1, mLastX, mLastY;
     private boolean mGamepadPresent;
+    // Driving (no menu up): the menu-only buttons hide. Asked of the game a few times a second
+    private boolean mDriving;
+    private final Runnable mPollDriving = new Runnable() {
+        @Override
+        public void run() {
+            boolean d;
+            try {
+                d = nativeDriving() != 0;
+            } catch (UnsatisfiedLinkError e) {
+                d = false; // the native library is not loaded yet
+            }
+            if (d != mDriving) {
+                mDriving = d;
+                releaseHidden();
+                invalidate();
+            }
+            postDelayed(this, 150);
+        }
+    };
 
     /** fidelity: the N64 controller as it was (stick and all four C buttons, no arrows) */
     public TouchControlsView(Context context, boolean fidelity) {
@@ -92,28 +133,36 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         mHideWithGamepad = Settings.hideWithGamepad(context);
         mArrows = !fidelity && Settings.arrows(context);
 
-        mButtons.add(new Button("A", CONT_A, -90, -90, 46));
-        mButtons.add(new Button("B", CONT_B, -190, -60, 36));
-        mButtons.add(new Button("Z", CONT_Z, -280, -45, 30));
-        mButtons.add(new Button("R", CONT_R, -70, -215, 32));
         if (fidelity) {
+            mButtons.add(new Button("A", CONT_A, -90, -90, 46));
+            mButtons.add(new Button("B", CONT_B, -190, -60, 36));
+            mButtons.add(new Button("Z", CONT_Z, -280, -45, 30));
+            mButtons.add(new Button("R", CONT_R, -70, -215, 32));
             // the Fidelity profile: the N64's four C buttons, a diamond above B
             mButtons.add(new Button("C▲", CONT_CU, -190, -238, 22));
             mButtons.add(new Button("C◀", CONT_CL, -236, -192, 22));
             mButtons.add(new Button("C▶", CONT_CR, -144, -192, 22));
             mButtons.add(new Button("C▼", CONT_CD, -190, -146, 22));
+            mButtons.add(new Button("L", CONT_L, 70, 50, 30));
+            mButtons.add(new Button("START", CONT_START, 0, 40, 28)); // dx 0: centred
         } else {
+            mButtons.add(new Button("A", CONT_A, -90, -90, 46).icon(R.drawable.ic_touch_gas));
+            mButtons.add(new Button("B", CONT_B, -190, -60, 36).icon(R.drawable.ic_touch_brake));
+            // R: the handbrake, a round button the size of C-Up
+            mButtons.add(new Button("R", CONT_R, -70, -215, 26).icon(R.drawable.ic_touch_handbrake));
             // C-Up only (the camera); the game makes no real use of C-Down, C-Left, C-Right
-            mButtons.add(new Button("C▲", CONT_CU, -190, -200, 26));
+            mButtons.add(new Button("C▲", CONT_CU, -190, -200, 26).icon(R.drawable.ic_touch_camera));
+            // Start: a small pause button in the top right corner, beside the HUD's cars left
+            mButtons.add(new Button("START", CONT_START, -30, 30, 20).icon(R.drawable.ic_touch_pause));
         }
         if (mArrows) {
             mButtons.add(new Button("◀", ARROW_LEFT, 70, -90, 44));
             mButtons.add(new Button("▶", ARROW_RIGHT, 185, -90, 44));
-            mButtons.add(new Button("▲", ARROW_UP, 127, -185, 26));
-            mButtons.add(new Button("▼", ARROW_DOWN, 127, -30, 22));
+            Button up = new Button("▲", ARROW_UP, 127, -185, 26);
+            Button down = new Button("▼", ARROW_DOWN, 127, -30, 22);
+            mButtons.add(fidelity ? up : up.menuOnly());
+            mButtons.add(fidelity ? down : down.menuOnly());
         }
-        mButtons.add(new Button("L", CONT_L, 70, 50, 30));
-        mButtons.add(new Button("START", CONT_START, 0, 40, 28)); // dx 0: centred
         mStickRadius = 70 * mDensity * mScale;
 
         mFill.setStyle(Paint.Style.FILL);
@@ -133,6 +182,7 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         if (mInput != null) {
             mInput.registerInputDeviceListener(this, null);
         }
+        post(mPollDriving);
     }
 
     @Override
@@ -140,6 +190,7 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         if (mInput != null) {
             mInput.unregisterInputDeviceListener(this);
         }
+        removeCallbacks(mPollDriving);
         super.onDetachedFromWindow();
     }
 
@@ -218,7 +269,7 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         Button best = null;
         float bestD = Float.MAX_VALUE, slop = 8 * mDensity;
         for (Button b : mButtons) {
-            if (b.hit(x, y, slop)) {
+            if (shown(b) && b.hit(x, y, slop)) {
                 float d = (x - b.cx) * (x - b.cx) + (y - b.cy) * (y - b.cy);
                 if (d < bestD) {
                     bestD = d;
@@ -283,6 +334,23 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         updateButtons();
     }
 
+    private boolean shown(Button b) {
+        return !(b.menuOnly && mDriving);
+    }
+
+    /** Fingers on buttons that just hid let go of them */
+    private void releaseHidden() {
+        for (Button b : mButtons) {
+            if (!shown(b)) {
+                for (int i = 0; i < mPointerBits.length; i++) {
+                    if (mPointerBits[i] == b.bit) mPointerBits[i] = 0;
+                }
+            }
+        }
+        updateButtons();
+        send();
+    }
+
     private void releaseAll() {
         for (int i = 0; i < mPointerBits.length; i++) mPointerBits[i] = 0;
         mStickPointer = -1;
@@ -325,17 +393,29 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
     protected void onDraw(Canvas c) {
         int a = Math.round(255 * mOpacity);
         for (Button b : mButtons) {
+            if (!shown(b)) continue;
             mFill.setColor(b.pressed ? 0xFFFFFFFF : 0xFF000000);
             mFill.setAlpha(b.pressed ? a / 2 : a / 3);
             mStroke.setColor(colorFor(b.bit));
             mStroke.setAlpha(a);
-            if (b.bit == CONT_START || b.bit == CONT_L || b.bit == CONT_R || b.bit == CONT_Z) {
+            if (b.pill) {
                 RectF r = new RectF(b.cx - b.r * 1.4f, b.cy - b.r * 0.7f, b.cx + b.r * 1.4f, b.cy + b.r * 0.7f);
                 c.drawRoundRect(r, b.r * 0.7f, b.r * 0.7f, mFill);
                 c.drawRoundRect(r, b.r * 0.7f, b.r * 0.7f, mStroke);
             } else {
                 c.drawCircle(b.cx, b.cy, b.r, mFill);
                 c.drawCircle(b.cx, b.cy, b.r, mStroke);
+            }
+            if (b.icon != 0) {
+                Drawable d = icon(b.icon);
+                if (d != null) {
+                    int s = Math.round(b.r * 0.58f);
+                    d.setTint(colorFor(b.bit));
+                    d.setAlpha(a);
+                    d.setBounds(Math.round(b.cx) - s, Math.round(b.cy) - s, Math.round(b.cx) + s, Math.round(b.cy) + s);
+                    d.draw(c);
+                    continue;
+                }
             }
             mText.setColor(colorFor(b.bit));
             mText.setAlpha(a);
@@ -368,6 +448,20 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
         mFill.setColor(0xFFFFFFFF);
         mFill.setAlpha(mStickPointer >= 0 ? a : a / 2);
         c.drawCircle(kx, ky, mStickRadius * 0.42f, mFill);
+    }
+
+    private final android.util.SparseArray<Drawable> mIcons = new android.util.SparseArray<>();
+
+    private Drawable icon(int res) {
+        Drawable d = mIcons.get(res);
+        if (d == null) {
+            d = getContext().getDrawable(res);
+            if (d != null) {
+                d = d.mutate();
+                mIcons.put(res, d);
+            }
+        }
+        return d;
     }
 
     private static int colorFor(int bit) {

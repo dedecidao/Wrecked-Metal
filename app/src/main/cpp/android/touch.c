@@ -25,6 +25,13 @@ static SDL_AtomicInt sTouchActive;
    polling interval still counts once */
 static SDL_AtomicInt sTouchLatched;
 
+int Port_TouchDriving(void); /* port/src/video.c */
+
+/* The view hides the arrows' up and down while the player drives (TouchControlsView) */
+JNIEXPORT jint JNICALL Java_io_github_dedecidao_dd64_TouchControlsView_nativeDriving(JNIEnv *env, jclass cls) {
+    return Port_TouchDriving();
+}
+
 JNIEXPORT void JNICALL Java_io_github_dedecidao_dd64_TouchControlsView_nativeSetState(JNIEnv *env, jclass cls,
                                                                                      jint buttons, jint x, jint y) {
     int old = SDL_GetAtomicInt(&sTouchButtons), latched;

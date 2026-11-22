@@ -23,7 +23,7 @@ layout = 1            ; 0 = the N64's HUD
 start_lights = 0.40   ; size of the red / yellow / green start lights (1.00 = the N64's)
 score = 215 12        ; score/place, left edge   (240x78)
 time = -1 -1          ; centre                   (144x90), -1 -1 = the N64's place
-cars_left = 1028 12   ; right edge               (240x78)
+cars_left = 928 12    ; right edge               (240x78)
 map = 230 137         ; left edge                (96x153)
 damage = 868 92       ; right edge: damage gauge + T/B bars (198x216)
 ```
@@ -41,7 +41,16 @@ The file is read when a race starts, so changes apply from the next race.
 | damage | HEALTH_* / WIRE_* (40-55), speed text 522, Wrecked Metal T/B bars | 228, 150 |
 | start lights (scaled) | READY/SET/GO (260-262), halos (263-265), orange light + halo (161, 162) | 111, 30 |
 
-## Touch buttons on the template (arrows layout, S23 at 720 lines)
+## Touch controls (Wrecked Metal mode)
+
+Icons from Tabler Icons (MIT, `LICENSES/tabler-icons.txt`): A gas, B brake, R handbrake (round,
+the size of C-Up), C-Up camera, Start a small pause button in the top right corner (centre
+30 dp from the top and right edges, radius 20 dp). No L (it only hides the HUD) and no Z (look
+back: the game reads it in `func_80024690`, `src/auto/25290.c`, as byte 2 of the player's
+input at +0x18, races only; kept for a rear-view mirror later). The arrows' up and down show
+only in menus and the pause (`Port_TouchDriving`). Play Fidelity keeps the N64 layout.
+
+## Touch buttons on the template (arrows layout, S23 at 720 lines, before the icons)
 
 From `TouchControlsView` (dp offsets from the edges, x1.85 px/dp): L 51,53-207,131;
 START 567,37-712,110; arrows < 48,472-210,634, > 260,472-423,634, ^ 186,329-283,425,
