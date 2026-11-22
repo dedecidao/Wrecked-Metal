@@ -24,7 +24,7 @@ start_lights = 0.40   ; size of the red / yellow / green start lights (1.00 = th
 score = 215 12        ; score/place, left edge   (240x78)
 time = -1 -1          ; centre                   (144x90), -1 -1 = the N64's place
 cars_left = 1028 12   ; right edge               (240x78)
-map = 12 150          ; left edge                (96x153)
+map = 230 137         ; left edge                (96x153)
 damage = 868 92       ; right edge: damage gauge + T/B bars (198x216)
 ```
 
