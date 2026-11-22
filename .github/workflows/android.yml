@@ -161,6 +161,32 @@ jobs:
             --title "Nightly (${GITHUB_SHA::7})" \
             --notes "Automatic builds of the latest commit on main. Install wreckedmetal-armeabi-v7a.apk (the -debug one is for testing). No ROM data included: pick your own ROM in the app."
 
+  test-build:
+    # TEMPORARY (reverted before merge): the debug APK of this branch as a test
+    # pre-release, so the maintainer can install it from his phone
+    name: Publish test pre-release
+    needs: [apk]
+    if: github.ref == 'refs/heads/claude/project-thread-1in3yw' && github.event_name == 'push'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dd64-android-debug-apk
+          path: dl
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          mkdir -p out
+          cp dl/*.apk out/wreckedmetal-dev-test-hud-envfix.apk
+          gh release delete test-hud-envfix --repo "$REPO" --yes --cleanup-tag || true
+          gh release create test-hud-envfix out/*.apk --repo "$REPO" --prerelease --latest=false --target "$GITHUB_SHA" \
+            --title "TEST build: HUD + env.txt fix (${GITHUB_SHA::7}), not a release" \
+            --notes "Test build for the maintainer's device only, NOT v0.1.4 or any official release. Debug app (Wrecked Metal Dev), installs over it. Will be deleted after testing."
+
   release:
     # A tag v* publishes a GitHub Release with the signed APK and the notes in
     # .github/release-notes/<tag>.md (a tag with a "-", like v0.1.0-beta, is a pre-release)
