@@ -240,9 +240,12 @@ Last updated: 2026-11-21 (v0.1.4-beta prep).
   no automatic merges for now, PRs stay as drafts for his review. Open: confirm on device which ID is
   the "high bonus" woman (0xF0 is the candidate) with `DD64_VOICELOG=1`. Next: menu SFX, transitions.
 
-- **2026-11-21:** random weather (rain, storm with flash + synthesized thunder, three-layer parallax
-  snow with a soft round flake), `[weather]` in `wm_tuning.ini` (tuning v3), docs/WEATHER.md. Branch
-  `feat/weather` in both repos, v0.1.4 prepared. Possible follow-up: darker sky / fog tint while raining.
+- **2026-11-21:** weather system (`port/game/wm_weather.c`, `port/src/wm_thunder.c`,
+  `[weather]` in `wm_tuning.ini`, `docs/WEATHER.md`). Initial random-weather attempt (rain,
+  storms with flash + synthesized thunder) is kept intact in code for future refinement, but
+  disabled by default (`random_weather = 0`, tuning v4) because it needs more polish over time;
+  the new three-layer parallax snow with soft round flakes remains active on the glacier track
+  (track 10). Branch `feat/weather` in both repos, v0.1.4 prepared.
 
 ---
 

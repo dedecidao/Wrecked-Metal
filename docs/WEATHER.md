@@ -1,9 +1,16 @@
 # Weather (Wrecked Metal mode)
 
-Random weather on the race tracks: rain, thunderstorms and snow. It only runs in
-**PLAY WRECKED METAL**; **Play Fidelity** keeps the N64's weather (snow on the glacier
-track, nothing else). Code: `port/game/wm_weather.c`, `port/src/wm_thunder.c` and
+Enhanced 3-layer parallax snow on the glacier track, plus an experimental random
+weather system (rain and thunderstorms) kept in the codebase for future refinement.
+By default (`random_weather = 0`), only the new parallax snow on the glacier track
+(track 10) is active in **PLAY WRECKED METAL**; **Play Fidelity** keeps the N64's
+original weather. Code: `port/game/wm_weather.c`, `port/src/wm_thunder.c` and
 `WM_WeatherRoll` / `WM_WeatherPick` in `port/src/wm_tuning.c` (engine fork).
+
+> **Status:** The initial random-weather attempt (rain, storms, synthesized thunder)
+> is preserved intact in code but disabled by default (`random_weather = 0`), as it
+> needs further visual/gameplay polish over time. Set `random_weather = 1` in
+> `Data/wm_tuning.ini` to opt in and test it.
 
 ## Track table
 
@@ -35,7 +42,7 @@ arenas included; without the arenas, 5 4 7 8 11 6 10 9.
 
 ```ini
 [weather]
-random_weather = 1      ; 0 = the N64's weather (snow on the glacier only)
+random_weather = 0      ; 0 (default) = new parallax snow on the glacier only; 1 = experimental random weather
 layers = 3              ; 1-3 particle depths (parallax): 1 = the N64's look
 density = 1.00          ; particle count multiplier (0.1-2.0)
 track_5 = 40 30 30 0    ; weights for clear rain storm snow, by track id (4-11)
