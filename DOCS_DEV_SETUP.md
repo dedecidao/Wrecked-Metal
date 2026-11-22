@@ -202,7 +202,7 @@ Exemplos de uso no PowerShell (a partir da raiz de `Wrecked-Metal`):
 O que o `test-run.ps1` faz automaticamente por segurança:
 - Procura o `adb.exe` no `PATH` e em `%USERPROFILE%\Android\platform-tools\adb.exe`.
 - Faz backup de `dd64.ini` (ou `dd64-fidelity.ini`) e zera os flags de `[cheats]` durante o teste, **restaurando o original no `finally`** (a menos que `-KeepCheats` seja passado).
-- Remove `Data/env.txt` ao final para não deixar testes presos em execuções futuras.
+- Remove `Data/env.txt` ao final para não deixar testes presos em execuções futuras (o próprio app também só aplica o arquivo uma vez e o renomeia para `env.used.txt`).
 - Salva `dd64.log`, `logcat.txt`, `screen.png` e quaisquer `shot_*.bmp` em `%USERPROFILE%\Documents\WreckedMetal-logs\<timestamp>\`.
 - Toca um som de notificação no Windows ao concluir (use `-NoAlarm` para silenciar).
 
@@ -217,7 +217,7 @@ Para o app de debug (`com.costelinhagames.wreckedmetal.debug`; no release, remov
 | `/sdcard/Android/data/com.costelinhagames.wreckedmetal.debug/files/Data/Logs/dd64.log` | Log completo da última sessão (ficha do aparelho, GPU/Vulkan, FPS a cada 30s, avisos `shadow:`, crashes) |
 | `/sdcard/Android/data/com.costelinhagames.wreckedmetal.debug/files/Data/Saves/` | Save do Controller Pak (`pak1.mpk`, compartilhado entre os dois modos) |
 | `/sdcard/Android/data/com.costelinhagames.wreckedmetal.debug/files/Data/Music/` | Faixas substitutas `song_XXXXXXXX.ogg` / `.mp3` |
-| `/sdcard/Android/data/com.costelinhagames.wreckedmetal.debug/files/Data/env.txt` | Variáveis `DD64_*` (`CHAVE=VALOR`, uma por linha, `#` comenta) lidas no boot |
+| `/sdcard/Android/data/com.costelinhagames.wreckedmetal.debug/files/Data/env.txt` | Variáveis `DD64_*` (`CHAVE=VALOR`, uma por linha, `#` comenta) lidas no boot. **Valem uma abertura só**: o app move o arquivo para `env.used.txt` ao ler, e ignora um `env.txt` mais antigo que a instalação/atualização do app |
 | `files/rom/dd64.z64` (armazenamento interno privado) | ROM validada importada pelo usuário |
 
 > [!CAUTION]

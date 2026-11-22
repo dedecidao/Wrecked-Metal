@@ -249,7 +249,10 @@ códigos digitados no jogo continuam funcionando. Valem para os 4 jogadores.
   direto (exportado nos builds debug), tira print e salva os logs.
 - `Data/env.txt` no celular: chaves `DD64_*`, como o shell do PC define
   (`DD64_PRESS`, `DD64_BOOT`, `DD64_FAKEGAS`, `DD64_GFXLOG`, `DD64_STACKS=<ms>`,
-  `DD64_PEEK=end,...`, `DD64_TEXDUMP`, `DD64_SHOT`).
+  `DD64_PEEK=end,...`, `DD64_TEXDUMP`, `DD64_SHOT`). Vale **uma abertura só**: o app
+  move o arquivo para `Data/env.used.txt` ao ler, e não aplica um `env.txt` mais antigo
+  que a instalação/atualização do app (`--installed=` do `GameActivity`). Para repetir um
+  teste, escreva o `env.txt` de novo antes de cada abertura.
 - O SDL manda caminhos relativos (dumps) para a pasta interna `files/`: `adb shell run-as
   com.costelinhagames.wreckedmetal.debug ls files`.
 
