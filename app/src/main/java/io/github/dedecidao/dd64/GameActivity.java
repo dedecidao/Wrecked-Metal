@@ -72,6 +72,11 @@ public class GameActivity extends SDLActivity {
         if (mSurface == null || (lines != 720 && lines != 1080)) {
             return;
         }
+        if (readIniInt("crt", 0) != 0) {
+            // [video] crt: the CRT filter draws its scanlines on the surface itself, so it
+            // keeps the screen's full resolution (the 3D still draws at internal_height)
+            return;
+        }
         Display d = getWindowManager().getDefaultDisplay();
         Point size = new Point();
         d.getRealSize(size);

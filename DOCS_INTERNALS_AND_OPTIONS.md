@@ -42,6 +42,18 @@ textura (`gfx_pc.cpp`), e as bordas ficam limpas. A transparência não muda.
 por quadro. Em tela pequena o contorno quase não aparece.
 **Recomendação:** `on` (melhora o visual sem custo por quadro). Desligado = fiel ao N64.
 
+### CRT filter (`[video] crt`, `crt_curvature`)
+
+Off by default, in both profiles (video page: "crt filter", "crt curvature"). The frame is
+box-filtered down to the N64's 240 lines, then each line is drawn as a gaussian beam with dark
+gaps between them (classic horizontal scanlines), a little wider where bright (light bloom),
+plus a soft glow; `crt_curvature = 1` bulges the picture like a tube. Adapted from the
+public-domain crt-lottes in libretro's glsl-shaders; engine code in `port/fast3d/shaders/crt*.frag`
+and `gfx_sdlgpu.cpp` / `gfx_opengl.cpp`. With `crt = 1` the launcher keeps the surface at the
+screen's full resolution (so the lines fall on real pixels); toggling it in game applies at once,
+the resolution change at the next start. Testing: `DD64_CRT="scan,pix,bloom,mask,boost"`
+(default `-10,-4,0.4,0,1.4`; mask > 0 brings back the aperture grille).
+
 ### Seamless sky (`[video] seamless_sky`)
 
 O céu do jogo é montado com **vários pedaços de textura**. Com filtro bilinear, cada
