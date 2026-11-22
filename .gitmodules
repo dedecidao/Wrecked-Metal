@@ -1,7 +1,7 @@
 [submodule "external/dd64"]
 	path = external/dd64
 	url = https://github.com/dedecidao/Destruction-Decomp-64.git
-	branch = android-port
+	branch = port-pc
 [submodule "external/SDL"]
 	path = external/SDL
 	url = https://github.com/libsdl-org/SDL.git
