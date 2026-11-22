@@ -19,14 +19,18 @@ Set them in `Data/wm_tuning.ini`:
 
 ```ini
 [hud]
-layout = 1            ; 0 = the N64's HUD
-start_lights = 0.40   ; size of the red / yellow / green start lights (1.00 = the N64's)
-score = 215 12        ; score/place, left edge   (240x78)
-time = -1 -1          ; centre                   (144x90), -1 -1 = the N64's place
-cars_left = 928 12    ; right edge               (240x78)
-map = 230 137         ; left edge                (96x153)
-damage = 868 92       ; right edge: damage gauge + T/B bars (198x216)
+layout = 1                  ; 0 = the N64's HUD
+start_lights = 0.40         ; size of the red / yellow / green start lights (1.00 = the N64's)
+score = 12 12 1.00          ; left edge    (240x78 at 1.00)
+time = 577 15 1.00          ; centre       (144x90)
+cars_left = 928 12 1.00     ; right edge   (240x78)
+map = 384 58 1.00           ; left edge    (96x153)
+damage = 958 92 1.00        ; right edge   damage gauge (108x216)
+pedals = 457 660 1.00       ; centre       T/B bars, side by side (366x36)
 ```
+
+Each line is `x y size`: the group's top-left on the 1280x720 template and its size
+(1.00 = the N64's; the group grows from its top-left). -1 -1 = the N64's place.
 
 The file is read when a race starts, so changes apply from the next race.
 
@@ -38,7 +42,8 @@ The file is read when a race starts, so changes apply from the next race.
 | time | SCREEN_BOX3 (170), texts 434 512 | 139, 22 |
 | cars_left | SCREEN_BOX2 (169), texts 504 424 | 219, 21 |
 | map | RADAR_SP (14), CAR_RADAR_* (15-29) | 32, 160 |
-| damage | HEALTH_* / WIRE_* (40-55), speed text 522, Wrecked Metal T/B bars | 228, 150 |
+| damage | HEALTH_* / WIRE_* (40-55), speed text 522 | 258, 150 |
+| pedals | Wrecked Metal T/B bars (LED segments, T fills left to right, B right to left) | 99, 193 |
 | start lights (scaled) | READY/SET/GO (260-262), halos (263-265), orange light + halo (161, 162) | 111, 30 |
 
 ## Touch controls (Wrecked Metal mode)
