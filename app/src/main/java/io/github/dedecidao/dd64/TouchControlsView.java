@@ -109,6 +109,7 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
     // Driving (no menu up): the menu-only buttons hide. Asked of the game a few times a second
     private boolean mDriving;
     private int mNotDrivingReads;
+    private int mLastDrawn = -1; // what the controls last drew (onTouchEvent)
     private final Runnable mPollDriving = new Runnable() {
         @Override
         public void run() {
@@ -270,7 +271,13 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
                 break;
         }
         send();
-        invalidate();
+        // redraw only when something on screen changed (a button's state, the stick):
+        // a finger moving on a button sends a stream of events at the touch rate
+        int drawn = currentBits() ^ (mStickPointer >= 0 ? (mOutX * 31 + mOutY + 1) << 20 : 0);
+        if (drawn != mLastDrawn || action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_UP) {
+            mLastDrawn = drawn;
+            invalidate();
+        }
         return true;
     }
 
