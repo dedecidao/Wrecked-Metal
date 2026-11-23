@@ -26,10 +26,12 @@ import java.util.List;
  *   right, above    R (the handbrake) and C-Up (the camera: the only C button the
  *                   game uses)
  *   top right       Start, a small pause button
- * Wrecked Metal draws icons on A, B, R, C-Up and Start (Tabler Icons, MIT), has no
- * L (it only hides the HUD) or Z (looking back: kept for a mirror later), and shows
- * the arrows' up and down only in menus (nativeDriving). The Fidelity profile keeps
- * the N64 controller: Z below B, L top left, Start top centre, four C buttons.
+ * Wrecked Metal draws icons on A, B, R, C-Up and Start (Tabler Icons, MIT); they are
+ * still the N64's A (gas, confirm), B (brake, back), R (handbrake), C-Up (camera) and
+ * Start. L (the HUD toggle and the dev page) is a small button under the HUD's score;
+ * there is no Z (looking back: kept for a mirror later), and the arrows' up and down
+ * show only in menus (nativeDriving). The Fidelity profile keeps the N64 controller:
+ * Z below B, L top left, Start top centre, four C buttons.
  *
  * A finger can slide from one button to another (A to B to brake, say).
  * The state goes to native code (android/touch.c) on every change and is
@@ -154,6 +156,8 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
             mButtons.add(new Button("C▲", CONT_CU, -190, -200, 26).icon(R.drawable.ic_touch_camera));
             // Start: a small pause button in the top right corner, beside the HUD's cars left
             mButtons.add(new Button("START", CONT_START, -30, 30, 20).icon(R.drawable.ic_touch_pause));
+            // L: the HUD toggle and the dev page; small, under the HUD's score (top left)
+            mButtons.add(new Button("L", CONT_L, 45, 75, 17));
         }
         if (mArrows) {
             mButtons.add(new Button("◀", ARROW_LEFT, 70, -90, 44));
