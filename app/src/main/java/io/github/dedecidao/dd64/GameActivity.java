@@ -37,14 +37,18 @@ public class GameActivity extends SDLActivity {
             rom = LauncherActivity.romFile(this).getAbsolutePath();
         }
         String app = "--app=" + getPackageName();
+        // When the app was installed or updated: native code skips a Data/env.txt older
+        // than that, a test's left-over (android_main.c loadEnvFile)
+        String installed = "--installed=0";
         try {
             android.content.pm.PackageInfo pi = getPackageManager().getPackageInfo(getPackageName(), 0);
             app += " " + pi.versionName + " (" + pi.versionCode + ")";
+            installed = "--installed=" + pi.lastUpdateTime;
         } catch (Exception e) {
             // the version only goes in the log
         }
         app += fidelity() ? ", Fidelity" : ", Wrecked Metal";
-        return fidelity() ? new String[] { rom, "--fidelity", app } : new String[] { rom, app };
+        return fidelity() ? new String[] { rom, "--fidelity", app, installed } : new String[] { rom, app, installed };
     }
 
     boolean fidelity() {

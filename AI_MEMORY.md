@@ -165,6 +165,11 @@ Last updated: 2026-11-21 (v0.1.4-beta prep).
 - **Physics trace**: engine branch `debug/car-trace`, enabled by `DD64_CARTRACE=1` in the debug
   app's `Data/env.txt` (with `DD64_BOOT=track=4,type=1,car=N`, `DD64_FAKEGAS=200:1.0`). It logs
   per-stage velocity jumps, tyre forces past the grip cap and big suspension forces.
+- **`Data/env.txt` is one launch only** (2026-11-22): a test's left-over `DD64_BOOT` +
+  `DD64_FAKEGAS` made the maintainer's own play start straight in a race with the gas held
+  and feel like different physics. Now `loadEnvFile` moves it to `env.used.txt` before reading,
+  and skips a file older than the app's `lastUpdateTime` (`--installed=`). Rewrite it before
+  every test launch; report its removal along with the `dd64.ini` restore.
 - Cloud agent environment (Claude Code on the web): the proxy blocks repo settings, rulesets,
   tag pushes and branch deletes. Those go through the maintainer's PC session or the GitHub UI.
 
@@ -246,6 +251,10 @@ Last updated: 2026-11-21 (v0.1.4-beta prep).
   disabled by default (`random_weather = 0`, tuning v4) because it needs more polish over time;
   the new three-layer parallax snow with soft round flakes remains active on the glacier track
   (track 10). Branch `feat/weather` in both repos, v0.1.4 prepared.
+
+- **2026-11-22:** the HUD/joystick build (#24) seemed to bring auto-gas, other physics and a
+  boot straight into a race on the S23. Cause: a test's `Data/env.txt` left on the device, not
+  the PR's code (it touches only drawing and touch layout). `Data/env.txt` made one-shot.
 
 ---
 

@@ -19,6 +19,7 @@
 #include <dirent.h>
 #include <pthread.h>
 #include <sys/prctl.h>
+#include <sys/stat.h>
 #include <sys/system_properties.h>
 #include <sys/syscall.h>
 #include <unistd.h>
@@ -260,14 +261,40 @@ static void openLog(void) {
  * Data/env.txt: KEY=VALUE lines set as environment variables at startup, for the
  * PC port's DD64_* test and debug switches (DD64_SHOT, DD64_PRESS, DD64_GFXLOG...),
  * which on a PC are set in the shell. Lines starting with # are skipped.
+ *
+ * One launch only: the file is moved to Data/env.used.txt before it is read, so a
+ * test switch left behind (DD64_BOOT straight into a race, DD64_FAKEGAS holding the
+ * gas) never sticks to the next time the player opens the game. A file older than
+ * the app's install or update (GameActivity: --installed=<ms>) is a left-over from
+ * an earlier build's test and is moved away without being applied. If the file can't
+ * be moved, it isn't applied either.
  */
+static long long sInstalledMs; /* the app's last install or update, ms since 1970 (0 unknown) */
+
 static void loadEnvFile(void) {
     const char *base = DD64A_GetBasePath();
-    char path[1024], line[1024];
+    char path[1024], used[1024], line[1024];
+    struct stat st;
+    int stale;
     FILE *f;
 
     SDL_snprintf(path, sizeof(path), "%sData/env.txt", base);
-    f = fopen(path, "r");
+    SDL_snprintf(used, sizeof(used), "%sData/env.used.txt", base);
+    if (stat(path, &st) != 0) {
+        return;
+    }
+    stale = sInstalledMs > 0 && (long long)st.st_mtime * 1000 < sInstalledMs;
+    remove(used);
+    if (rename(path, used) != 0) {
+        Port_Log("env: Data/env.txt could not be moved to env.used.txt, not applied");
+        return;
+    }
+    if (stale) {
+        Port_Log("env: Data/env.txt is older than this install (a left-over test), not applied; "
+                 "moved to env.used.txt");
+        return;
+    }
+    f = fopen(used, "r");
     if (f == NULL) {
         return;
     }
@@ -284,7 +311,7 @@ static void loadEnvFile(void) {
             end[-1] = 0;
         }
         SDL_setenv_unsafe(line, eq + 1, 1); /* getenv and SDL_getenv both see it */
-        Port_Log("env: %s=%s", line, eq + 1);
+        Port_Log("env: %s=%s (this launch only)", line, eq + 1);
     }
     fclose(f);
 }
@@ -331,6 +358,14 @@ int main(int argc, char **argv) {
         Port_Log("chdir %s failed", DD64A_GetBasePath());
     }
     logDevice(argc, argv);
+    {
+        int a;
+        for (a = 1; a < argc; a++) {
+            if (argv[a] != NULL && SDL_strncmp(argv[a], "--installed=", 12) == 0) {
+                sInstalledMs = SDL_strtoll(argv[a] + 12, NULL, 10);
+            }
+        }
+    }
     loadEnvFile();
     installCrashHandler();
     startStackSampler();
