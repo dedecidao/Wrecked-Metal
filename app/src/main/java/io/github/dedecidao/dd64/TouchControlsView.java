@@ -108,6 +108,7 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
     private boolean mGamepadPresent;
     // Driving (no menu up): the menu-only buttons hide. Asked of the game a few times a second
     private boolean mDriving;
+    private int mNotDrivingReads;
     private final Runnable mPollDriving = new Runnable() {
         @Override
         public void run() {
@@ -117,8 +118,12 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
             } catch (UnsatisfiedLinkError e) {
                 d = false; // the native library is not loaded yet
             }
-            if (d != mDriving) {
-                mDriving = d;
+            // into driving at once; out of it only when two reads in a row say so, so one
+            // late frame never flashes the menu arrows in
+            mNotDrivingReads = d ? 0 : mNotDrivingReads + 1;
+            boolean next = d || (mDriving && mNotDrivingReads < 2);
+            if (next != mDriving) {
+                mDriving = next;
                 releaseHidden();
                 invalidate();
             }
