@@ -28,8 +28,8 @@ import java.util.List;
  *   top right       Start, a small pause button
  * Wrecked Metal draws icons on A, B, R, C-Up and Start (Tabler Icons, MIT); they are
  * still the N64's A (gas, confirm), B (brake, back), R (handbrake), C-Up (camera) and
- * Start. L (the HUD toggle and the dev page) is a small button under the HUD's score;
- * there is no Z (looking back: kept for a mirror later), and the arrows' up and down
+ * Start. L (the HUD toggle and the dev page) is a small button under the HUD's score,
+ * Z (looking back) the same right under it, and the arrows' up and down
  * show only in menus (nativeDriving). The Fidelity profile keeps the N64 controller:
  * Z below B, L top left, Start top centre, four C buttons.
  *
@@ -164,6 +164,9 @@ public class TouchControlsView extends View implements InputManager.InputDeviceL
             mButtons.add(new Button("START", CONT_START, -30, 30, 20).icon(R.drawable.ic_touch_pause));
             // L: the HUD toggle and the dev page; small, under the HUD's score (top left)
             mButtons.add(new Button("L", CONT_L, 45, 75, 17));
+            // Z: the same small button, right under L (looks back for now; the rear-view
+            // mirror will use its camera later)
+            mButtons.add(new Button("Z", CONT_Z, 45, 107, 17));
         }
         if (mArrows) {
             mButtons.add(new Button("◀", ARROW_LEFT, 70, -90, 44));
